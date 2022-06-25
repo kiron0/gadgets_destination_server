@@ -459,7 +459,7 @@ async function run() {
           Team Member Routes Starts
     */
 
-    app.get("/teamMembers", verifyJWT, async (req, res) => {
+    app.get("/teamMembers", async (req, res) => {
       const teamMembers = await teamMembersCollection.find({}).toArray();
       res.send(teamMembers);
     });
