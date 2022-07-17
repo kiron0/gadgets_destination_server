@@ -302,6 +302,20 @@ async function run() {
       res.send(parts);
     });
 
+    app.get("/products/all", async (req, res) => {
+      const result = await productsCollection.find({}).toArray();
+      res.send({ success: true, result: result });
+    });
+
+    app.get("/products/search", async (req, res) => {
+      const searchText = req.query.q.toLowerCase();
+      const result = await productsCollection.find({}).toArray();
+      const searchedResult = result.filter((product) =>
+        product.productName.toLowerCase().includes(searchText)
+      );
+      res.send(searchedResult);
+    });
+
     app.post("/products", async (req, res) => {
       const parts = req.body;
       const result = await productsCollection.insertOne(parts);
@@ -464,6 +478,15 @@ async function run() {
       res.send(teamMembers);
     });
 
+    // get member with id
+    app.get("/teamMembers/:id", async (req, res) => {
+      const id = req.params.id;
+      const membersDet = await teamMembersCollection.findOne({
+        _id: ObjectId(id),
+      });
+      res.send(membersDet);
+    });
+
     app.post("/teamMembers", verifyJWT, async (req, res) => {
       const teamMember = req.body;
       const result = await teamMembersCollection.insertOne(teamMember);
@@ -485,15 +508,87 @@ async function run() {
     /*
           Blogs Routes Starts
     */
-    app.get("/blogs", verifyJWT, async (req, res) => {
+    app.get("/blogs/all", async (req, res) => {
       const blogs = await blogsCollection.find({}).toArray();
       res.send(blogs);
     });
 
-    app.get("/blogs/:id", verifyJWT, async (req, res) => {
+    app.get("/blogs", verifyJWT, async (req, res) => {
+      const userId = req.query.uid;
+      const decodedID = req.decoded.uid;
+      const query = { "author.uid": userId };
+      if (decodedID === userId) {
+        const result = await blogsCollection.find(query).toArray();
+        res.send(result);
+      } else {
+        res.status(403).send({ success: false, message: "forbidden request" });
+      }
+    });
+
+    app.put("/blogs", verifyJWT, async (req, res) => {
+      const userId = req.query.uid;
+      const decodedID = req.decoded.uid;
+      const id = req.query.editId;
+      const data = req.body;
+      if (userId === decodedID) {
+        const options = { upsert: true };
+        const query = { _id: ObjectId(id) };
+        const updateDoc = {
+          $set: data,
+        };
+        const result = await blogsCollection.updateOne(
+          query,
+          updateDoc,
+          options
+        );
+        if (result.acknowledged) {
+          res.send({
+            success: true,
+            message: "Updated blog successfully done.",
+          });
+        }
+      } else {
+        res.status(403).send({ success: false, message: "forbidden request" });
+      }
+    });
+
+    app.delete("/blogs", verifyJWT, async (req, res) => {
+      const userId = req.query.uid;
+      const deleteId = req.query.deletedId;
+      const decodedID = req.decoded.uid;
+      if (userId === decodedID) {
+        const query = { _id: ObjectId(deleteId) };
+        const result = await blogsCollection.deleteOne(query);
+        if (result.acknowledged) {
+          res.send({
+            success: true,
+            message: "Blog deleted successfully done.",
+          });
+        }
+      } else {
+        res.status(403).send({ success: false, message: "forbidden request" });
+      }
+    });
+
+    app.get("/blogs/search", async (req, res) => {
+      const searchText = req.query.q.toLowerCase();
+      const result = await blogsCollection.find({}).toArray();
+      const searchedResult = result.filter((blogs) =>
+        blogs.title.toLowerCase().includes(searchText)
+      );
+      res.send(searchedResult);
+    });
+
+    app.get("/blogs/:id", async (req, res) => {
       const id = req.params.id;
       const blog = await blogsCollection.findOne({ _id: ObjectId(id) });
       res.send(blog);
+    });
+
+    app.post("/blogs", verifyJWT, async (req, res) => {
+      const blog = req.body;
+      const result = await blogsCollection.insertOne(blog);
+      res.send(result);
     });
     /*
           Blogs Routes Ends
