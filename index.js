@@ -6,6 +6,7 @@ require("dotenv").config();
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const port = process.env.PORT || 5000;
+const path = require("path");
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@gadgetsdestination.9imop.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -600,7 +601,7 @@ async function run() {
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
-  res.send("Gadgets Destination is Calling You!");
+  res.sendFile(path.join(__dirname, "./index.html"));
 });
 
 app.listen(port, () => {
